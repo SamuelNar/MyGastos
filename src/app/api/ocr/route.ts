@@ -8,10 +8,6 @@ const openrouterApiKey = process.env.OPENAI_API_KEY_2?.trim();
 const openai = new OpenAI({
   apiKey: openrouterApiKey,
   baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    "X-Title": "expense-tracker-ocr",
-  },
 });
 
 export async function POST(req: Request) {
