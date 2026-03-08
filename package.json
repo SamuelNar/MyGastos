@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "build:seenode": "prisma generate && next build",
+    "start:seenode": "next start -H 0.0.0.0 -p 3000",
     "lint": "eslint"
   },
   "dependencies": {
