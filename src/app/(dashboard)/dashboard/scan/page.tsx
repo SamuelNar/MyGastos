@@ -51,6 +51,9 @@ export default function ScanPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [categoryMessage, setCategoryMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -67,6 +70,8 @@ export default function ScanPage() {
     setOcrText("");
     setSaved(false);
     setError("");
+    setSuggestedCategory(null);
+    setCategoryMessage("");
 
     try {
       let fileToProcess = file;
@@ -95,6 +100,7 @@ export default function ScanPage() {
       setImageUrl(data.imageUrl || null);
 
       const catMatch = categories.find((c) => c.name === data.category);
+      const suggested = typeof data.suggestedCategory === "string" ? data.suggestedCategory.trim() : "";
 
       setForm({
         amount: data.amount ? String(data.amount) : "",
@@ -102,6 +108,7 @@ export default function ScanPage() {
         categoryId: catMatch?.id || "",
         date: data.date || new Date().toISOString().split("T")[0],
       });
+      setSuggestedCategory(suggested || null);
     } catch (err) {
       console.error(err);
       setError("Error al conectar con el servidor");
@@ -114,6 +121,36 @@ export default function ScanPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     processFile(file);
+  }
+
+  async function handleCreateSuggestedCategory() {
+    if (!suggestedCategory || creatingCategory) return;
+
+    setCreatingCategory(true);
+    setCategoryMessage("");
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: suggestedCategory }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCategoryMessage(data.error || "No se pudo crear la categoria sugerida");
+        return;
+      }
+
+      const updatedCategories: Category[] = await fetch("/api/categories").then((r) => r.json());
+      setCategories(updatedCategories);
+      setForm((prev) => ({ ...prev, categoryId: data.id }));
+      setCategoryMessage("Categoria creada y seleccionada");
+      setSuggestedCategory(null);
+    } catch {
+      setCategoryMessage("Error al crear la categoria sugerida");
+    } finally {
+      setCreatingCategory(false);
+    }
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -263,6 +300,31 @@ export default function ScanPage() {
                     ))}
                   </select>
                 </div>
+                {suggestedCategory && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-900/20">
+                    <p className="text-sm text-amber-900 dark:text-amber-200">
+                      La IA sugiere una categoria mas especifica: <strong>{suggestedCategory}</strong>
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCreateSuggestedCategory}
+                        disabled={creatingCategory}
+                        className="px-3 py-1.5 text-sm rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60"
+                      >
+                        {creatingCategory ? "Creando..." : "Crear y usar categoria"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSuggestedCategory(null)}
+                        className="px-3 py-1.5 text-sm rounded-md border border-amber-400 text-amber-800 hover:bg-amber-100 dark:text-amber-200 dark:hover:bg-amber-900/30"
+                      >
+                        Mantener categoria actual
+                      </button>
+                    </div>
+                    {categoryMessage && <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">{categoryMessage}</p>}
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-medium">Fecha</label>
                   <input

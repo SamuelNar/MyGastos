@@ -57,9 +57,10 @@ export async function POST(req: Request) {
   "amount": numero total (el monto mas alto o el total final),
   "description": "descripcion corta del gasto (nombre del negocio o concepto principal)",
   "category": "una de estas categorias: ${categoryNames.join(", ")}",
+  "suggestedCategory": "categoria mas especifica detectada en el ticket si aplica, o null",
   "date": "fecha del recibo en formato YYYY-MM-DD si es visible, o null"
 }
-Si no puedes extraer algun campo, usa null para ese campo. Para category, elige la mas apropiada basandote en el tipo de negocio o productos del recibo.`,
+Si no puedes extraer algun campo, usa null para ese campo. Para category, elige SIEMPRE una de las categorias existentes. Para suggestedCategory, solo sugiere una categoria especifica si agrega valor frente a category (ej: "Gastronomia y bares" cuando category sea "Alimentacion").`,
         },
         {
           role: "user",
@@ -93,11 +94,18 @@ Si no puedes extraer algun campo, usa null para ese campo. Para category, elige 
       });
     }
 
+    const mappedCategory = categoryNames.includes(parsed.category) ? parsed.category : categoryNames[0] || "Otros";
+    const suggestedCategory = typeof parsed.suggestedCategory === "string" ? parsed.suggestedCategory.trim() : "";
+    const normalizedSuggested = suggestedCategory && !categoryNames.some((c) => c.toLowerCase() === suggestedCategory.toLowerCase())
+      ? suggestedCategory
+      : null;
+
     return NextResponse.json({
       ocrText: parsed.ocrText || content,
       amount: parsed.amount || null,
       description: parsed.description || null,
-      category: categoryNames.includes(parsed.category) ? parsed.category : categoryNames[0] || "Otros",
+      category: mappedCategory,
+      suggestedCategory: normalizedSuggested,
       date: parsed.date || null,
       imageUrl,
     });
