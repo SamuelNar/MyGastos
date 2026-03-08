@@ -30,7 +30,7 @@ async function convertPdfToImage(file: File): Promise<File> {
 
   if (!context) throw new Error("No se pudo crear el contexto del canvas");
 
-  await page.render({ canvasContext: context, viewport }).promise;
+  await page.render({ canvasContext: context, viewport, canvas: canvas as any }).promise;
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => {
