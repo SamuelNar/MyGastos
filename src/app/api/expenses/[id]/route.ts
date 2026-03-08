@@ -25,6 +25,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!expense) return NextResponse.json({ error: "Gasto no encontrado" }, { status: 404 });
 
   const body = await req.json();
+
+  if (body.categoryId) {
+    const category = await prisma.category.findFirst({ where: { id: body.categoryId, userId: session.id } });
+    if (!category) {
+      return NextResponse.json({ error: "Categoria invalida para este usuario" }, { status: 400 });
+    }
+  }
+
   const updated = await prisma.expense.update({
     where: { id },
     data: {

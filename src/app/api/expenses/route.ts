@@ -44,6 +44,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Campos requeridos: amount, description, categoryId" }, { status: 400 });
     }
 
+    const category = await prisma.category.findFirst({ where: { id: categoryId, userId: session.id } });
+    if (!category) {
+      return NextResponse.json({ error: "Categoria invalida para este usuario" }, { status: 400 });
+    }
+
     const expense = await prisma.expense.create({
       data: {
         amount: Number(amount),

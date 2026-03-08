@@ -28,6 +28,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Todos los campos son requeridos" }, { status: 400 });
   }
 
+  const category = await prisma.category.findFirst({ where: { id: categoryId, userId: session.id } });
+  if (!category) {
+    return NextResponse.json({ error: "Categoria invalida para este usuario" }, { status: 400 });
+  }
+
   const budget = await prisma.budget.upsert({
     where: {
       userId_categoryId_month_year: {

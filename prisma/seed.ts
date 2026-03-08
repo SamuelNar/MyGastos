@@ -14,14 +14,26 @@ const categories = [
 ];
 
 async function main() {
-  for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { name: cat.name },
-      update: {},
-      create: cat,
-    });
+  const users = await prisma.user.findMany({ select: { id: true } });
+
+  for (const user of users) {
+    for (const cat of categories) {
+      await prisma.category.upsert({
+        where: {
+          userId_name: {
+            userId: user.id,
+            name: cat.name,
+          },
+        },
+        update: {},
+        create: {
+          ...cat,
+          userId: user.id,
+        },
+      });
+    }
   }
-  console.log("Seed completed: categories created");
+  console.log("Seed completed: user categories created");
 }
 
 main()

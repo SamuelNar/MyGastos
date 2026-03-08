@@ -13,17 +13,22 @@ model User {
   password  String
   name      String
   createdAt DateTime  @default(now())
+  categories Category[]
   expenses  Expense[]
   budgets   Budget[]
 }
 
 model Category {
   id       String    @id @default(cuid())
-  name     String    @unique
+  name     String
   icon     String    @default("tag")
   color    String    @default("#6366f1")
+  userId   String
+  user     User      @relation(fields: [userId], references: [id])
   expenses Expense[]
   budgets  Budget[]
+
+  @@unique([userId, name])
 }
 
 model Expense {

@@ -42,7 +42,11 @@ export async function POST(req: Request) {
     }
 
     // Get categories from database
-    const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+    const categoryWhere = { userId: session.id } as NonNullable<Parameters<typeof prisma.category.findMany>[0]>["where"];
+    const categories = await prisma.category.findMany({
+      where: categoryWhere,
+      orderBy: { name: "asc" },
+    });
     const categoryNames = categories.map((c) => c.name);
 
     // OCR con OpenRouter (modelo con soporte de vision)
