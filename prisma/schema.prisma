@@ -16,6 +16,18 @@ model User {
   categories Category[]
   expenses  Expense[]
   budgets   Budget[]
+  incomes   Income[]
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String
+  date        DateTime @default(now())
+  source      String   @default("Otro")
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
 }
 
 model Category {

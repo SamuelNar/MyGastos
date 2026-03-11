@@ -30,8 +30,16 @@ interface Stats {
   allTimeRecent: RecentExpense[];
 }
 
+interface IncomeStats {
+  total: number;
+  prevTotal: number;
+  count: number;
+  bySource: { source: string; total: number; count: number }[];
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [incomeStats, setIncomeStats] = useState<IncomeStats | null>(null);
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -40,12 +48,21 @@ export default function DashboardPage() {
     fetch(`/api/expenses/stats?month=${month}&year=${year}`)
       .then((r) => r.json())
       .then(setStats);
+    fetch(`/api/incomes/stats?month=${month}&year=${year}`)
+      .then((r) => r.json())
+      .then(setIncomeStats);
   }, [month, year]);
 
   if (!stats) return <div className="animate-pulse text-gray-400 p-8">Cargando estadisticas...</div>;
 
   const monthDiff = stats.prevTotal > 0
     ? Math.round(((stats.total - stats.prevTotal) / stats.prevTotal) * 100)
+    : null;
+
+  const incomeTotal = incomeStats?.total ?? 0;
+  const balance = incomeTotal - stats.total;
+  const incomeDiff = (incomeStats?.prevTotal ?? 0) > 0
+    ? Math.round(((incomeTotal - (incomeStats?.prevTotal ?? 0)) / (incomeStats?.prevTotal ?? 1)) * 100)
     : null;
 
   const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -100,24 +117,39 @@ export default function DashboardPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Balance card */}
+        <div className={`p-5 rounded-xl shadow-sm border col-span-1 sm:col-span-2 lg:col-span-1 ${
+          balance >= 0
+            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+        }`}>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Balance del Mes</p>
+          <p className={`text-3xl font-bold ${
+            balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+          }`}>
+            {balance >= 0 ? "+" : ""}${balance.toFixed(2)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">ingresos - gastos</p>
+        </div>
+        {/* Total incomes */}
         <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Total del Mes</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Ingresos del Mes</p>
+          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">${incomeTotal.toFixed(2)}</p>
+          {incomeDiff !== null && (
+            <p className={`text-xs mt-1 font-medium ${incomeDiff >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+              {incomeDiff > 0 ? "+" : ""}{incomeDiff}% vs mes anterior
+            </p>
+          )}
+        </div>
+        {/* Total expenses */}
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border dark:border-gray-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Gastos del Mes</p>
           <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">${stats.total.toFixed(2)}</p>
           {monthDiff !== null && (
             <p className={`text-xs mt-1 font-medium ${monthDiff > 0 ? "text-red-500 dark:text-red-400" : "text-green-500 dark:text-green-400"}`}>
               {monthDiff > 0 ? "+" : ""}{monthDiff}% vs mes anterior
             </p>
           )}
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Transacciones</p>
-          <p className="text-3xl font-bold">{stats.count}</p>
-          <p className="text-xs text-gray-400 mt-1">{stats.byCategory.length} categorias</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Promedio por Gasto</p>
-          <p className="text-3xl font-bold">${stats.count ? (stats.total / stats.count).toFixed(2) : "0.00"}</p>
-          <p className="text-xs text-gray-400 mt-1">por transaccion</p>
         </div>
         <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400">Mayor Gasto</p>
